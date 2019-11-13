@@ -4,20 +4,37 @@ image:
 ports:
 - port: 9000
   onOpen: ignore
+- port: 2375-2376
+  onOpen: ignore
 
 tasks:
-- command: echo
+- command: |
+    clear
+    export DOCKER_HOST=tcp://localhost:2375
+    echo "once the setup is done, try running $(tput setaf 2)docker ps"
+    echo
 - command: |
     clear
     gp await-port 9000 &&
     remote=$(gp url 9000)
     echo
     echo "Inlets server is running on $(gp url 9000)."
-    echo "$(tput setaf 7)You can tunnel to it using $(tput setaf 2)inlets client --remote=${remote/https/wss} --token $(cat /tmp/inlets-token) --upstream=http://127.0.0.1:3000$(tput sgr0)"
+    echo "$(tput setaf 7)Connect your local Docker daemon by running"
     echo
-    echo "Once you have an inlet client connected, head over to $(tput setaf 4)$(gp url 9000)$(tput sgr0) to access that service."
+    echo "$(tput setaf 2)inlets client --remote=${remote/https/wss} \\"
+    echo "$(tput setaf 2)  --token $(cat /tmp/inlets-token) \\"
+    echo "$(tput setaf 2)  --upstream=http://127.0.0.1:2375$(tput sgr0)"
+    echo
+    echo "on your local machine."
+    echo
+    echo "In the example above, $(tput setaf 3)your local Docker daemon must listen on port 2375.$(tput sgr0)"
+    echo
+    echo "Locally run the following to expose your Docker socket on 127.0.0.1:2375"
+    echo "$(tput setaf 3)  docker run --name expose-docker --rm -d -v /var/run/docker.sock:/var/run/docker.sock \\"
+    echo "$(tput setaf 3)     -p 127.0.0.1:2375:2375 alpine/socat TCP-LISTEN:2375,fork UNIX-CONNECT:/var/run/docker.sock"
+    read
   openMode: split-right
 - command: |
     head -c 16 /dev/urandom | shasum | cut -d" " -f1 > /tmp/inlets-token
-    inlets server --control-port=9000 --port 8000 --token="$(cat /tmp/inlets-token)"
+    inlets server --control-port=9000 --port 2375 --token="$(cat /tmp/inlets-token)"
   openMode: split-bottom
