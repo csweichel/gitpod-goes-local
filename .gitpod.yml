@@ -1,0 +1,23 @@
+image:
+  file: .gitpod.Dockerfile
+
+ports:
+- port: 9000
+  onOpen: ignore
+
+tasks:
+- command: echo
+- command: |
+    clear
+    gp await-port 9000 &&
+    remote=$(gp url 9000)
+    echo
+    echo "Inlets server is running on $(gp url 9000)."
+    echo "$(tput setaf 7)You can tunnel to it using $(tput setaf 2)inlets client --remote=${remote/https/wss} --token $(cat /tmp/inlets-token) --upstream=http://127.0.0.1:3000$(tput sgr0)"
+    echo
+    echo "Once you have an inlet client connected, head over to $(tput setaf 4)$(gp url 9000)$(tput sgr0) to access that service."
+  openMode: split-right
+- command: |
+    head -c 16 /dev/urandom | shasum | cut -d" " -f1 > /tmp/inlets-token
+    inlets server --control-port=9000 --port 8000 --token="$(cat /tmp/inlets-token)"
+  openMode: split-bottom
